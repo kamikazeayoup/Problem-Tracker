@@ -4,7 +4,7 @@
 
 LeetCode Problem Tracker is a Chrome extension designed to help developers track, manage, and systematically revise coding problems from LeetCode and other platforms.
 
-![Extension Screenshot](![image](https://github.com/user-attachments/assets/77c419ec-6800-46d8-81e3-c9d9a780b080))
+![Extension Screenshot](https://github.com/user-attachments/assets/77c419ec-6800-46d8-81e3-c9d9a780b080)
 
 ## Features
 
@@ -91,7 +91,3 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## Contact
 Your Name - [Your Email]
 Project Link: [GitHub Repository Link]
-
-## Acknowledgements
-- LeetCode
-- Chrome Extension Developers Community
