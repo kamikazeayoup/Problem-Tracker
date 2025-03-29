@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Problem Tracker</title>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      width: 400px;
+      margin: 0;
+      padding: 15px;
+      background-color: #f9f9f9;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    label {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    input, select {
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+      background-color: #fafafa;
+    }
+    
+    input:focus, select:focus {
+      border-color: #4285f4;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+    }
+    
+    input[readonly] {
+      background-color: #f0f0f0;
+      cursor: not-allowed;
+    }
+    
+    button {
+      padding: 12px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+    
+    button:hover {
+      background-color: #3367d6;
+    }
+    
+    .daily-problem {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
+    
+    .problem-list {
+      margin-top: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    
+    .problem-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .problem-item:last-child {
+      border-bottom: none;
+    }
+    
+    .problem-link {
+      color: #4285f4;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    
+    .problem-link:hover {
+      text-decoration: underline;
+    }
+    
+    .problem-info {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 15px;
+    }
+    
+    .tab {
+      padding: 10px 15px;
+      cursor: pointer;
+    }
+    
+    .tab.active {
+      border-bottom: 2px solid #4285f4;
+      font-weight: bold;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .delete-btn {
+      background-color: #f44336;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: auto;
+    }
+    
+    .delete-btn:hover {
+      background-color: #d32f2f;
+    }
+    
+    .flex {
+      display: flex;
+      align-items: center;
+    }
+
+      /* Snackbar styling */
+  .snackbar {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #4CAF50;
+    color: white;
+    text-align: center;
+    border-radius: 6px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 30px;
+    font-size: 14px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+  }
+  
+  .snackbar.show {
+    visibility: visible;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  }
+
+  .buy-me-coffee {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bmc-button {
+  display: flex;
+  align-items: center;
+  background-color: #FFDD00;
+  color: #000;
+  text-decoration: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.bmc-button:hover {
+  background-color: #FFCA00;
+}
+
+.bmc-button img {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+
+  
+  @keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+  }
+  
+  @keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+  }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Problem Tracker</h2>
+    
+    <div class="tabs">
+      <div class="tab active" data-tab="add">Add Problem</div>
+      <div class="tab" data-tab="list">Problem List</div>
+      <div class="tab" data-tab="daily">Daily Revision</div>
+    </div>
+    
+    <div class="tab-content active" id="add-tab">
+      <div class="form-group">
+        <label for="problem-link">Problem Link:</label>
+        <input type="text" id="problem-link" placeholder="https://leetcode.com/problems/squares-of-a-sorted-array/">
+      </div>
+      
+      <div class="form-group">
+        <label for="problem-name">Problem Name:</label>
+        <input type="text" id="problem-name" placeholder="Automatically extracted from URL but you can change it" >
+      </div>
+      
+      <div class="form-group">
+        <label for="solved-by-yourself">Solved by yourself?</label>
+        <select id="solved-by-yourself">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="times-solved">Times Solved:</label>
+        <input type="number" id="times-solved" min="0" value="1">
+      </div>
+      
+      <div class="form-group">
+        <label for="solving-date">Solving Date:</label>
+        <input type="date" id="solving-date">
+      </div>
+      
+      <button id="add-problem">Add Problem</button>
+    </div>
+    
+    <div class="tab-content" id="list-tab">
+      <div class="problem-list" id="problem-list-container">
+        <!-- Problem list will be populated here -->
+      </div>
+    </div>
+    
+    <div class="tab-content" id="daily-tab">
+      <button id="get-daily-problem">Give Me a Daily Revision Problem</button>
+      
+      <div class="daily-problem" id="daily-problem-container" style="display: none;">
+        <h3>Today's Problem:</h3>
+        <div id="daily-problem-content"></div>
+      </div>
+    </div>
+  </div>
+  <div class="snackbar" id="snackbar"></div>
+  <div class="buy-me-coffee">
+    <a href="https://buymeacoffee.com/kamikazeayoup" target="_blank" class="bmc-button">
+      <img src="images/buy-me-coffee.png" alt="Buy me a coffee">
+      <span>Buy me a coffee</span>
+    </a>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
