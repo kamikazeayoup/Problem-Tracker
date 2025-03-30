@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Problem Tracker",
+    "name": "Daily LeetCode Drill: Solve & Remember",
     "version": "1.0",
-    "description": "Track coding problems and get daily revision suggestions",
+    "description": "Track your solved problems with a smart daily challenge that helps you master difficult algorithms.",
     "permissions": ["storage"],
     "action": {
       "default_popup": "popup.html",

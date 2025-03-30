@@ -1,11 +1,42 @@
 document.addEventListener('DOMContentLoaded', function() {
+
+  chrome.storage.local.get(['dailyStreak', 'lastSolvedDate', 'currentDailyProblem'], function(result) {
+    const currentDate = new Date().toISOString().split('T')[0];
+    const lastSolvedDate = result.lastSolvedDate;
+    const dailyStreak = result.dailyStreak || 0;
+
+    const dailyProblemContainer = document.getElementById('daily-problem-container');
+    const dailyProblemContent = document.getElementById('daily-problem-content');
+
+    // Check if today's problem is solved
+    if (lastSolvedDate === currentDate) {
+      // Show streak message
+      dailyProblemContent.innerHTML = `
+        <div class="problem-item">
+          <h3>Streak Celebration!</h3>
+          <div class="problem-info">
+            <p>${getStreakMessage(dailyStreak)}</p>
+          </div>
+        </div>
+      `;
+      dailyProblemContainer.style.display = 'block';
+    } else if (result.currentDailyProblem) {
+      // If there's a current daily problem and not solved today, show the problem
+      getDailyProblem();
+    } else {
+      // No problem for today, get a new one
+      getDailyProblem();
+    }
+  });
+
     // Load existing problems
     loadProblems();
     
     // Add event listeners
     document.getElementById('add-problem').addEventListener('click', addProblem);
-    document.getElementById('get-daily-problem').addEventListener('click', getDailyProblem);
-    
+    document.getElementById('get-daily-problem').addEventListener('click', function() {
+        getDailyProblem(true); // Force new problem selection
+      });    
     // Tab switching
     const tabs = document.querySelectorAll('.tab');
     tabs.forEach(tab => {
@@ -31,6 +62,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
   
+  function getStreakMessage(dailyStreak) {
+  if (dailyStreak === 1) {
+    return "🚀 You've started your daily coding streak! Keep it up!";
+  } else if (dailyStreak === 7) {
+    return "🔥 1 week of consistent solving. You're awesome!";
+  } else if (dailyStreak === 30) {
+    return "🏆 30 days of continuous learning! You're a coding champion!";
+  }
+  return `Great job! You're on a ${dailyStreak} day solving streak!`;
+}
   // Function to extract problem name from URL
   function extractProblemName(url) {
     try {
@@ -212,8 +253,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  function getDailyProblem() {
-    chrome.storage.local.get(['problems', 'lastDailyProblem'], function(result) {
+  function getDailyProblem(forceNew = false) {
+    chrome.storage.local.get(['problems', 'currentDailyProblem'], function(result) {
       const problems = result.problems || [];
       
       if (problems.length === 0) {
@@ -221,74 +262,48 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
-      // Filter out the last problem given (if any) to avoid immediate repetition
-      let availableProblems = problems;
-      if (result.lastDailyProblem) {
-        availableProblems = problems.filter(p => p.link !== result.lastDailyProblem);
-        
-        // If all problems have been given, reset
-        if (availableProblems.length === 0) {
-          availableProblems = problems;
-        }
-      }
-      
-      // Assign weights/priorities to each problem
-      const weightedProblems = availableProblems.map(problem => {
-        let weight = 100;
-        
-        // Reduce weight if solved by yourself
-        if (problem.solvedByYourself) {
-          weight -= 30;
-        }
-        
-        // Reduce weight based on times solved (more times = lower priority)
-        weight -= Math.min(problem.timesSolved * 10, 50);
-        
-        // Ensure weight is at least 1
-        weight = Math.max(weight, 1);
-        
-        return {
-          problem: problem,
-          weight: weight
-        };
-      });
-      
-      // Total weight
-      const totalWeight = weightedProblems.reduce((sum, wp) => sum + wp.weight, 0);
-      
-      // Random selection based on weights
-      let random = Math.random() * totalWeight;
       let selectedProblem = null;
       
-      for (const wp of weightedProblems) {
-        random -= wp.weight;
-        if (random <= 0) {
-          selectedProblem = wp.problem;
-          break;
+      // If not forcing new and a current daily problem exists, use it
+      if (!forceNew && result.currentDailyProblem) {
+        selectedProblem = problems.find(p => p.link === result.currentDailyProblem);
+      }
+      
+      // If no current problem or forcing new, select a new problem
+      if (!selectedProblem) {
+        // Weighted random selection logic
+        const weightedProblems = problems.map(problem => {
+          let weight = 100;
+          
+          if (problem.solvedByYourself) {
+            weight -= 30;
+          }
+          
+          weight -= Math.min(problem.timesSolved * 10, 50);
+          weight = Math.max(weight, 1);
+          
+          return { problem, weight };
+        });
+        
+        const totalWeight = weightedProblems.reduce((sum, wp) => sum + wp.weight, 0);
+        
+        let random = Math.random() * totalWeight;
+        for (const wp of weightedProblems) {
+          random -= wp.weight;
+          if (random <= 0) {
+            selectedProblem = wp.problem;
+            break;
+          }
         }
       }
       
-      // If something went wrong, just pick a random one
-      if (!selectedProblem && availableProblems.length > 0) {
-        selectedProblem = availableProblems[Math.floor(Math.random() * availableProblems.length)];
-      }
-      
-      // Display the selected problem
+      // Display the problem
       const dailyProblemContainer = document.getElementById('daily-problem-container');
       const dailyProblemContent = document.getElementById('daily-problem-content');
       
       if (selectedProblem) {
-        // Extract domain name for display
-        let displayLink = selectedProblem.link;
-        try {
-          const url = new URL(selectedProblem.link);
-          displayLink = url.hostname + url.pathname;
-        } catch (e) {
-          // If not a valid URL, use as is
-        }
-        
         dailyProblemContent.innerHTML = `
-          <a href="${selectedProblem.link}" class="problem-link" target="_blank">${selectedProblem.name || displayLink}</a>
+          <a href="${selectedProblem.link}" class="problem-link" target="_blank">${selectedProblem.name}</a>
           <div class="problem-info">
             <span>Solved by yourself: ${selectedProblem.solvedByYourself ? 'Yes' : 'No'}</span>
             <span>Times solved: ${selectedProblem.timesSolved}</span>
@@ -304,36 +319,75 @@ document.addEventListener('DOMContentLoaded', function() {
           markProblemAsSolved(selectedProblem.link);
         });
         
-        // Save last given problem
-        chrome.storage.local.set({ lastDailyProblem: selectedProblem.link });
+        // Save the current daily problem only if it's a new selection
+        if (forceNew || !result.currentDailyProblem) {
+          chrome.storage.local.set({ 
+            currentDailyProblem: selectedProblem.link 
+          });
+        }
       } else {
         dailyProblemContent.innerHTML = 'No problems available.';
         dailyProblemContainer.style.display = 'block';
       }
     });
-  }
+  }  
   
   function markProblemAsSolved(problemLink) {
-    chrome.storage.local.get(['problems'], function(result) {
+    chrome.storage.local.get(['problems', 'dailyStreak', 'lastSolvedDate'], function(result) {
       const problems = result.problems || [];
-      
+      const currentDate = new Date().toISOString().split('T')[0];
+      let dailyStreak = result.dailyStreak || 0;
+      let lastSolvedDate = result.lastSolvedDate || null;
+  
       const problemIndex = problems.findIndex(p => p.link === problemLink);
       
       if (problemIndex !== -1) {
-        // Increment times solved
         problems[problemIndex].timesSolved += 1;
         problems[problemIndex].lastRevised = new Date().toISOString();
         
-        // Update solving date to today
-        const today = new Date().toISOString().split('T')[0];
-        problems[problemIndex].solvingDate = today;
+        problems[problemIndex].solvingDate = currentDate;
+        problems[problemIndex].solvedByYourself = true;
         
-        chrome.storage.local.set({ problems: problems }, function() {
-          // Show snackbar instead of alert
-          showSnackbar('Problem marked as solved!');
+        // Streak Logic
+        if (lastSolvedDate) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const lastSolved = new Date(lastSolvedDate);
+  
+          if (
+            lastSolved.toISOString().split('T')[0] === yesterday.toISOString().split('T')[0]
+          ) {
+            dailyStreak += 1;
+          } else if (lastSolved.toISOString().split('T')[0] !== currentDate) {
+            dailyStreak = 1;
+          }
+        } else {
+          dailyStreak = 1;
+        }
+  
+        chrome.storage.local.set({ 
+          problems: problems,
+          currentDailyProblem: null,
+          dailyStreak: dailyStreak,
+          lastSolvedDate: currentDate
+        }, function() {
+          const streakMessage = getStreakMessage(dailyStreak);
+  
+          // Clear daily problem container
+          const dailyProblemContainer = document.getElementById('daily-problem-container');
+          const dailyProblemContent = document.getElementById('daily-problem-content');
           
-          // Refresh daily problem
-          getDailyProblem();
+          dailyProblemContent.innerHTML = `
+            <div class="problem-item">
+              <h3>Problem Solved!</h3>
+              <div class="problem-info">
+                <p>${streakMessage}</p>
+              </div>
+            </div>
+          `;
+          dailyProblemContainer.style.display = 'block';
+  
+          showSnackbar(`Problem marked as solved! ${streakMessage}`);
         });
       }
     });
